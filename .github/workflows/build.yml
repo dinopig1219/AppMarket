@@ -1,4 +1,4 @@
-name: Build AppMarket
+name: Build App
 
 on:
   push:
