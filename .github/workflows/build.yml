@@ -29,11 +29,25 @@ jobs:
       - name: Grant execute permission
         run: chmod +x ./gradlew
 
+      - name: Decode Signing Key
+        run: echo "${{ secrets.SIGNING_KEY }}" | base64 -d > keystore.jks
+
       - name: Build Release APK
         run: ./gradlew :app:android:assembleRelease
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/keystore.jks
+          KEYSTORE_PASS: ${{ secrets.KEY_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: AppMarket-release
           path: app/android/build/outputs/apk/release/*.apk
+
+      - name: Upload APK to Telegram
+        run: |
+          curl -F document=@"$(find app/android/build/outputs/apk/release -name '*.apk' | head -n 1)" \
+            -F chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument"
